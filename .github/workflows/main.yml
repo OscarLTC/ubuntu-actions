@@ -1,4 +1,4 @@
-name: Compilar y Desplegar
+name: Deploy on Push to Main
 
 on:
   push:
@@ -6,29 +6,19 @@ on:
       - main
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Obtener el código
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Configurar Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "21"
-
-      - name: Instalar dependencias
-        run: npm install
-
-      - name: Compilar el proyecto
-        run: npm run build
-
-      - name: Transferir artefactos de construcción
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          rsync -avz -e "ssh -o StrictHostKeyChecking=no" ./dist oscar@DESKTOP-HL9UG32:/D/Oscar/Code/deploy
+    - name: Check PAT
+      run: |
+        if [ -z "$PAT" ]; then
+          echo "PAT is not set."
+          exit 1
+        else
+          echo "PAT is set correctly."
+        fi
+      env:
+        PAT: ${{ secrets.PAT }}
