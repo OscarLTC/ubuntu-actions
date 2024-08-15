@@ -12,7 +12,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Check PAT
+    - name: Verify PAT
+      env:
+        PAT: ${{ secrets.PAT }}
       run: |
         if [ -z "$PAT" ]; then
           echo "PAT is not set."
@@ -20,5 +22,3 @@ jobs:
         else
           echo "PAT is set correctly."
         fi
-      env:
-        PAT: ${{ secrets.PAT }}
