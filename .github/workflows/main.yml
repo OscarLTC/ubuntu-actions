@@ -17,6 +17,15 @@ jobs:
     - name: Install sshpass
       run: sudo apt-get install -y sshpass
 
+    - name: Test SSH Connection
+      env:
+        HOST: ${{ github.ref == 'refs/heads/dev' && '192.168.10.48' || '192.168.10.47' }}
+        USERNAME: root
+        PASSWORD: ${{ secrets.SSH_PASSWORD }}  # La contraseña se almacena en GitHub Secrets
+      run: |
+        echo "Testing SSH connection to $HOST..."
+        sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USERNAME@$HOST "echo 'Connected'"
+      
     - name: Deploy to server
       env:
         HOST: ${{ github.ref == 'refs/heads/dev' && '192.168.10.48' || '192.168.10.47' }}
