@@ -1,24 +1,43 @@
-name: Deploy on Push to Main
+name: Deploy
 
 on:
   push:
     branches:
-      - main
+      - dev
+      - qa
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Verify PAT
+    - name: Install sshpass
+      run: sudo apt-get install -y sshpass
+
+    - name: Deploy to server
       env:
-        PAT: ${{ secrets.PAT }}
+        HOST: ${{ github.ref == 'refs/heads/dev' && '192.168.10.48' || '192.168.10.47' }}
+        USERNAME: root
+        PASSWORD: ${{ secrets.SSH_PASSWORD }}  # La contraseña se almacena en GitHub Secrets
+        PROJECT_NAME: flesanjob
       run: |
-        if [ -z "$PAT" ]; then
-          echo "PAT is not set."
-          exit 1
-        else
-          echo "PAT is set correctly."
-        fi
+        # Conectar al servidor y eliminar el directorio del proyecto si existe
+        sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USERNAME@$HOST <<'EOF'
+          cd /var/www/html/vue
+          if [ -d "$PROJECT_NAME" ]; then
+            rm -rf $PROJECT_NAME
+          fi
+          mkdir $PROJECT_NAME
+        EOF
+
+        # Subir los archivos del directorio local 'dist' al servidor
+        sshpass -p "$PASSWORD" scp -r ./dist/* $USERNAME@$HOST:/var/www/html/vue/$PROJECT_NAME/
+
+        # Ajustar permisos del directorio en el servidor
+        sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USERNAME@$HOST <<'EOF'
+          sudo chown -R www-data:www-data /var/www/html/vue/$PROJECT_NAME
+          sudo chmod -R 775 /var/www/html/vue/$PROJECT_NAME
+        EOF
